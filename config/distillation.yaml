@@ -1,0 +1,22 @@
+distillation:
+  lr: 2.5e-4
+  batch_size: 32
+  seq_length: 128
+  temperature: 2.0
+  alpha: 0.5
+
+student:
+  name: "Baby-Llama-58M"
+  hidden_size: 512
+  intermediate_size: 1024
+  n_layer: 16
+  n_head: 8
+
+teachers:
+  - "./models/Llama-360M"
+  - "./models/gpt-705M"
+
+logging:
+  wandb: True
+  project: "babylm"
+  output_dir: "./models/"

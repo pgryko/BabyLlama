@@ -1,0 +1,68 @@
+{
+  "completion_prompts": [
+    {
+      "prompt": "The early bird catches the",
+      "expected": ["worm", "fish", "prey"]
+    },
+    {
+      "prompt": "All that glitters is not",
+      "expected": ["gold", "silver", "metal"]
+    },
+    {
+      "prompt": "A picture is worth a thousand",
+      "expected": ["words", "pictures", "letters"]
+    },
+    {
+      "prompt": "Actions speak louder than",
+      "expected": ["words", "actions", "sounds"]
+    },
+    {
+      "prompt": "Better late than",
+      "expected": ["never", "early", "sorry"]
+    },
+    {
+      "prompt": "The capital of France is",
+      "expected": ["Paris", "London", "Berlin"]
+    },
+    {
+      "prompt": "Water freezes at zero degrees",
+      "expected": ["Celsius", "Fahrenheit", "Kelvin"]
+    },
+    {
+      "prompt": "The sun rises in the",
+      "expected": ["east", "west", "north"]
+    },
+    {
+      "prompt": "Once upon a",
+      "expected": ["time", "day", "night"]
+    },
+    {
+      "prompt": "In conclusion,",
+      "expected": ["therefore", "however", "thus"]
+    }
+  ],
+  "consistency_groups": [
+    [
+      "The capital of France is",
+      "France's capital city is",
+      "The capital city of France is"
+    ],
+    [
+      "What color is the sky?",
+      "What color is the ocean?",
+      "What color is grass?"
+    ],
+    [
+      "1 + 1 =",
+      "2 + 2 =",
+      "3 + 3 ="
+    ]
+  ],
+  "repetition_prompts": [
+    "The weather today is",
+    "I went to the store and",
+    "My favorite thing about",
+    "Once I saw a",
+    "The best way to"
+  ]
+}

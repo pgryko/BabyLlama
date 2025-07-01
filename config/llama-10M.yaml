@@ -1,0 +1,28 @@
+data:
+  tokenizer_path: "./models/gpt-clean-16000.json"
+  train_path: "./data/babylm_10M_clean"
+  eval_path: "./data/babylm_dev_clean"
+  seq_length: 128
+  eval_samples: 256  # Reduced for smaller dataset
+
+model:
+  type: "Llama"
+  name: "Llama-10M"
+  hidden_size: 192
+  intermediate_size: 768
+  n_layer: 6
+  n_head: 6
+  tie_word_embeddings: False
+
+training:
+  lr: 3e-4
+  batch_size: 32
+  num_epochs: 2  # Reduced for faster training demo
+  gradient_accumulation_steps: 4  # Effective batch size = 32 * 4 = 128
+  warmup_steps: 100
+  fp16: True
+
+logging: 
+  wandb: False  # Disable wandb for now
+  project: "babylm-10M"
+  output_dir: "./models/"
