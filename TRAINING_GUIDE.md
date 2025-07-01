@@ -32,7 +32,7 @@ This comprehensive guide will take you from zero to a trained language model in 
 
 ```bash
 # 1. Clone and navigate
-git clone https://github.com/yourusername/BabyLlama.git
+git clone https://github.com/pgryko/BabyLlama.git
 cd BabyLlama
 
 # 2. Setup environment (choose one)

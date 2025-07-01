@@ -33,7 +33,7 @@ Get a model training in under 5 minutes:
 
 ```bash
 # 1. Clone and setup
-git clone https://github.com/yourusername/BabyLlama.git
+git clone https://github.com/pgryko/BabyLlama.git
 cd BabyLlama
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev,test]"
