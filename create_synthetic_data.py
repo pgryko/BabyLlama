@@ -103,17 +103,62 @@ def generate_and_save_data(output_dir: Path, filename: str, num_tokens: int):
 
 
 def main():
-    base_data_dir = Path("data")
+    import argparse
 
-    print("Generating synthetic training data...")
-    generate_and_save_data(
-        base_data_dir / "babylm_10M_clean", "synthetic.train", 500_000
+    parser = argparse.ArgumentParser(description="Generate synthetic training data")
+    parser.add_argument(
+        "--num-tokens",
+        type=int,
+        default=500_000,
+        help="Number of tokens to generate for training data",
+    )
+    parser.add_argument(
+        "--output-dir", type=str, default="data", help="Base output directory"
+    )
+    parser.add_argument(
+        "--large-scale",
+        action="store_true",
+        help="Generate large-scale dataset (1B tokens)",
     )
 
-    print("Generating synthetic dev data...")
-    generate_and_save_data(base_data_dir / "babylm_dev_clean", "synthetic.dev", 50_000)
+    args = parser.parse_args()
+
+    base_data_dir = Path(args.output_dir)
+
+    # Determine token counts
+    if args.large_scale:
+        train_tokens = 1_000_000_000  # 1B tokens
+        dev_tokens = 10_000_000  # 10M tokens for dev
+        output_suffix = "_1B"
+    else:
+        train_tokens = args.num_tokens
+        dev_tokens = max(
+            50_000, train_tokens // 10
+        )  # 10% of training data or 50k minimum
+        output_suffix = (
+            f"_{train_tokens//1000}k"
+            if train_tokens < 1_000_000
+            else f"_{train_tokens//1_000_000}M"
+        )
+
+    print(f"Generating synthetic training data ({train_tokens:,} tokens)...")
+    generate_and_save_data(
+        base_data_dir / f"babylm_10M_clean{output_suffix}",
+        "synthetic.train",
+        train_tokens,
+    )
+
+    print(f"Generating synthetic dev data ({dev_tokens:,} tokens)...")
+    generate_and_save_data(
+        base_data_dir / f"babylm_dev_clean{output_suffix}", "synthetic.dev", dev_tokens
+    )
 
     print("\nData generation complete!")
+    print(f"Training data: {train_tokens:,} tokens")
+    print(f"Dev data: {dev_tokens:,} tokens")
+    print("Output directories:")
+    print(f"  - {base_data_dir / f'babylm_10M_clean{output_suffix}'}")
+    print(f"  - {base_data_dir / f'babylm_dev_clean{output_suffix}'}")
 
 
 if __name__ == "__main__":

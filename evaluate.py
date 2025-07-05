@@ -152,9 +152,23 @@ class ModelEvaluator:
 
             # Generate multiple sequences
             with torch.no_grad():
+                # Calculate available tokens for generation
+                input_length = inputs["input_ids"].shape[1]
+                available_tokens = max(
+                    1, max_length - input_length
+                )  # Ensure at least 1 token
+                max_new_tokens = min(50, available_tokens)
+
+                # Skip generation if input is too long
+                if max_new_tokens <= 0:
+                    print(
+                        f"Skipping generation for prompt (input too long: {input_length} tokens)"
+                    )
+                    continue
+
                 outputs = self.model.generate(
                     **inputs,
-                    max_length=max_length,
+                    max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     top_p=top_p,
                     num_return_sequences=num_return_sequences,
@@ -347,8 +361,81 @@ def evaluate_model(
     else:
         print("No evaluation data provided. Using BabyLM dev set.")
         data_processor = DataProcessor(evaluator.tokenizer)
-        dev_dataset = data_processor.load_text_files("./data/babylm_dev_clean", "dev")
-        eval_texts = [item["text"] for item in dev_dataset.select(range(num_samples))]
+
+        # Try to find the appropriate dev dataset based on model name
+        from pathlib import Path
+
+        model_name = Path(model_path).name
+
+        # Try different dev dataset paths
+        dev_paths = [
+            (
+                f"./data/babylm_dev_clean_{model_name.split('-')[-1]}"
+                if "-" in model_name
+                else None
+            ),
+            "./data/babylm_dev_clean_1M",
+            "./data/babylm_dev_clean",
+        ]
+
+        dev_dataset = None
+        for dev_path in dev_paths:
+            if dev_path and Path(dev_path).exists():
+                try:
+                    dev_dataset = data_processor.load_text_files(dev_path, "dev")
+                    if len(dev_dataset) > 0:
+                        print(f"Using dev dataset: {dev_path}")
+                        break
+                except:
+                    continue
+
+        if dev_dataset is None or len(dev_dataset) == 0:
+            print("No evaluation data found. Skipping evaluation.")
+            return
+
+        # Handle case where dataset has fewer samples than requested
+        available_samples = len(dev_dataset)
+        actual_samples = min(num_samples, available_samples)
+        print(
+            f"Requested {num_samples} samples, using {actual_samples} available samples"
+        )
+
+        eval_texts = [
+            item["text"] for item in dev_dataset.select(range(actual_samples))
+        ]
+
+        # If we have very long texts, split them into smaller chunks for evaluation
+        chunked_eval_texts = []
+        max_chars = 200  # Smaller chunk size to ensure we stay within token limits
+
+        for text in eval_texts:
+            # Split long texts into sentences and group them into chunks
+            sentences = text.split(". ")
+            current_chunk = ""
+
+            for sentence in sentences:
+                # Check if adding this sentence would make the chunk too long
+                if len(current_chunk) + len(sentence) + 2 < max_chars:  # +2 for ". "
+                    current_chunk += sentence + ". "
+                else:
+                    # Save current chunk if it's not empty
+                    if current_chunk.strip():
+                        chunked_eval_texts.append(current_chunk.strip())
+
+                    # Start new chunk with current sentence
+                    current_chunk = sentence + ". "
+
+                    # If even a single sentence is too long, truncate it
+                    if len(current_chunk) > max_chars:
+                        current_chunk = current_chunk[: max_chars - 3] + "..."
+
+            # Add the last chunk if it's not empty
+            if current_chunk.strip():
+                chunked_eval_texts.append(current_chunk.strip())
+
+        # Limit to requested number of samples
+        eval_texts = chunked_eval_texts[:num_samples]
+        print(f"Split into {len(eval_texts)} evaluation chunks")
 
     print("\n=== Model Evaluation Report ===")
     print(f"Model: {model_path}")

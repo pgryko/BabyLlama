@@ -96,28 +96,14 @@ def prepare_datasets_modern(config: dict, tokenizer):
     """Prepare datasets using modern approach"""
     processor = DataProcessor(tokenizer)
 
-    # Check if we have pre-tokenized cache
-    cache_dir = Path("data/.cache")
-    cache_dir.mkdir(exist_ok=True)
-    cache_file = cache_dir / f"{config['model']['name']}_tokenized.arrow"
-
-    if cache_file.exists():
-        print(f"Loading cached dataset from {cache_file}")
-        from datasets import load_from_disk
-
-        datasets = load_from_disk(str(cache_file))
-    else:
-        datasets = processor.prepare_dataset(
-            train_data_dir=config["data"]["train_path"].replace("_clean", ""),
-            eval_data_dir=config["data"]["train_path"]
-            .replace("_clean", "")
-            .replace("10M", "dev"),
-            max_length=config["data"]["seq_length"],
-            clean=True,
-            num_proc=4,
-        )
-        # Save cache
-        datasets.save_to_disk(str(cache_file))
+    # Prepare datasets (caching disabled for now)
+    datasets = processor.prepare_dataset(
+        train_data_dir=config["data"]["train_path"],
+        eval_data_dir=config["data"]["eval_path"],
+        max_length=config["data"]["seq_length"],
+        clean=True,
+        num_proc=4,
+    )
 
     # Sample validation set if needed
     if len(datasets["validation"]) > config["data"]["eval_samples"]:
@@ -243,6 +229,14 @@ def main():
     metrics = train_result.metrics
     metrics["train_samples"] = len(train_dataset)
     metrics["eval_samples"] = len(eval_dataset)
+    metrics["num_parameters"] = model.num_parameters()
+    metrics["model_config"] = {
+        "hidden_size": config["model"]["hidden_size"],
+        "n_layer": config["model"]["n_layer"],
+        "n_head": config["model"]["n_head"],
+        "vocab_size": tokenizer.vocab_size,
+        "seq_length": config["data"]["seq_length"],
+    }
 
     # Calculate final perplexity
     if "eval_loss" in metrics:
@@ -253,10 +247,31 @@ def main():
 
     print(f"\nTraining complete! Model saved to: {output_dir}")
     print("Final metrics:")
-    print(f"  - Training Loss: {metrics.get('train_loss', 'N/A'):.4f}")
-    print(f"  - Eval Loss: {metrics.get('eval_loss', 'N/A'):.4f}")
-    print(f"  - Eval Perplexity: {metrics.get('eval_perplexity', 'N/A'):.2f}")
-    print(f"  - Training Time: {metrics.get('train_runtime', 'N/A'):.1f}s")
+    train_loss = metrics.get("train_loss", "N/A")
+    eval_loss = metrics.get("eval_loss", "N/A")
+    eval_perplexity = metrics.get("eval_perplexity", "N/A")
+    train_runtime = metrics.get("train_runtime", "N/A")
+
+    print(
+        f"  - Training Loss: {train_loss:.4f}"
+        if isinstance(train_loss, (int, float))
+        else f"  - Training Loss: {train_loss}"
+    )
+    print(
+        f"  - Eval Loss: {eval_loss:.4f}"
+        if isinstance(eval_loss, (int, float))
+        else f"  - Eval Loss: {eval_loss}"
+    )
+    print(
+        f"  - Eval Perplexity: {eval_perplexity:.2f}"
+        if isinstance(eval_perplexity, (int, float))
+        else f"  - Eval Perplexity: {eval_perplexity}"
+    )
+    print(
+        f"  - Training Time: {train_runtime:.1f}s"
+        if isinstance(train_runtime, (int, float))
+        else f"  - Training Time: {train_runtime}s"
+    )
 
 
 if __name__ == "__main__":
